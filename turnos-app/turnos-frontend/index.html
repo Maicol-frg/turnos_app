@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turnos — Reserva con tu estilista</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#3D2B4F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#3D2B4F; --ink:#211530; --blush:#F6E4E9; --coral:#E2637B;
+  --coral-dark:#C94F66; --paper:#FBF7F8; --line:#E9DDE1; --ok:#3E8E5C;
+  --text:var(--ink); --bg:var(--paper); --card:#fff; --muted:#6E6072;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --text:#F1E9EE; --bg:#1B1420; --card:#251A2B; --line:#3A2C40; --muted:#B8A9BE;
+  }
+}
+:root[data-theme="dark"]{ --text:#F1E9EE; --bg:#1B1420; --card:#251A2B; --line:#3A2C40; --muted:#B8A9BE; }
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0; height:100%; background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Fraunces',serif; font-weight:600; margin:0 0 .3em;}
+.app{max-width:520px; margin:0 auto; min-height:100%; display:flex; flex-direction:column;}
+header{
+  position:sticky; top:0; padding:calc(18px + env(safe-area-inset-top,0px)) 20px 14px;
+  background:var(--plum); color:#fff; z-index:5;
+}
+header h1{font-size:1.4rem; letter-spacing:.2px;}
+header p{margin:2px 0 0; font-size:.85rem; color:#D9C9DE;}
+nav.tabs{display:flex; gap:6px; margin-top:14px;}
+nav.tabs button{
+  flex:1; padding:9px; border:none; border-radius:10px; font:500 .85rem 'Inter';
+  background:rgba(255,255,255,.12); color:#EEE0F1; cursor:pointer;
+}
+nav.tabs button.active{background:#fff; color:var(--plum);}
+main{flex:1; padding:20px 20px 40px;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+.stylist{display:flex; gap:12px; align-items:center; cursor:pointer;}
+.stylist .avatar{
+  width:46px; height:46px; border-radius:50%; background:var(--blush); color:var(--coral-dark);
+  display:flex; align-items:center; justify-content:center; font-family:'Fraunces'; font-weight:600; flex-shrink:0;
+}
+:root[data-theme="dark"] .stylist .avatar, @media (prefers-color-scheme:dark){.stylist .avatar{background:#3A2C40; color:#F0B9C6;}}
+.stylist h3{font-size:1.02rem;}
+.stylist p{margin:2px 0 0; font-size:.82rem; color:var(--muted);}
+.stylist:hover{border-color:var(--coral);}
+.chip{display:inline-block; font-size:.75rem; padding:2px 9px; border-radius:99px; background:var(--blush); color:var(--coral-dark); margin-top:6px;}
+.service-row{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer;}
+.service-row:last-child{border-bottom:none;}
+.service-row b{font-size:.95rem;}
+.service-row span{font-size:.8rem; color:var(--muted);}
+.price{font-family:'Fraunces'; font-weight:600; color:var(--coral-dark);}
+.days{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px;}
+.day{flex:0 0 auto; padding:10px 12px; border:1px solid var(--line); border-radius:10px; text-align:center; cursor:pointer; min-width:56px;}
+.day.active{background:var(--coral); border-color:var(--coral); color:#fff;}
+.day small{display:block; font-size:.68rem; color:var(--muted);}
+.day.active small{color:#FDE4E9;}
+.slots{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.slot{padding:10px; border:1px solid var(--line); border-radius:9px; text-align:center; font-size:.85rem; cursor:pointer; background:var(--card);}
+.slot.active{background:var(--coral); color:#fff; border-color:var(--coral);}
+.slot.taken{opacity:.35; text-decoration:line-through; cursor:not-allowed;}
+label{display:block; font-size:.8rem; color:var(--muted); margin:12px 0 4px;}
+input{
+  width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:9px;
+  font:500 .95rem 'Inter'; background:var(--bg); color:var(--text);
+}
+input:focus{outline:2px solid var(--coral); outline-offset:1px;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.btn{
+  width:100%; padding:14px; border:none; border-radius:11px; background:var(--coral); color:#fff;
+  font:600 .95rem 'Inter'; cursor:pointer; margin-top:16px;
+}
+.btn:active{background:var(--coral-dark);}
+.btn.secondary{background:transparent; color:var(--coral-dark); border:1px solid var(--coral); margin-top:8px;}
+.btn:disabled{opacity:.5; cursor:not-allowed;}
+.summary-line{display:flex; justify-content:space-between; padding:6px 0; font-size:.88rem;}
+.summary-line b{color:var(--text);}
+.total{border-top:1px solid var(--line); margin-top:6px; padding-top:10px; font-family:'Fraunces'; font-size:1.15rem;}
+.back{background:none; border:none; color:var(--muted); font:500 .85rem 'Inter'; cursor:pointer; padding:0 0 14px; display:flex; align-items:center; gap:4px;}
+.confirm{text-align:center; padding:30px 10px;}
+.confirm .check{width:60px; height:60px; border-radius:50%; background:var(--ok); color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:1.8rem;}
+.appt{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--coral); border-radius:10px; padding:13px 15px; margin-bottom:10px;}
+.appt.done{border-left-color:var(--ok); opacity:.7;}
+.appt.cancelled{border-left-color:#999; opacity:.5;}
+.appt-top{display:flex; justify-content:space-between; font-size:.85rem; color:var(--muted);}
+.appt h3{font-size:1rem; margin:4px 0;}
+.appt-actions{display:flex; gap:8px; margin-top:10px;}
+.appt-actions button{flex:1; padding:8px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--text); font-size:.8rem; cursor:pointer;}
+.appt-actions .done-btn{border-color:var(--ok); color:var(--ok);}
+.appt-actions .cancel-btn{border-color:#C0455C; color:#C0455C;}
+.empty{text-align:center; color:var(--muted); padding:40px 10px; font-size:.9rem;}
+.login-pick{padding:12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer;}
+.login-pick:hover{border-color:var(--coral);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Turnos</h1>
+    <p id="tagline">Reserva tu cita con tu estilista de confianza</p>
+    <nav class="tabs">
+      <button id="tabReservar" class="active" onclick="setTab('reservar')">Reservar</button>
+      <button id="tabAgenda" onclick="setTab('agenda')">Mi agenda</button>
+    </nav>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ---------- Conexión con el backend ---------- */
+// Cambia esto por la URL de tu API cuando la despliegues (ej: https://api.tunegocio.com/api)
+const API_BASE = 'http://localhost:4000/api';
+
+async function api(path, options={}){
+  const res = await fetch(API_BASE + path, {
+    headers:{'Content-Type':'application/json'}, ...options
+  });
+  if(!res.ok){ const err = await res.json().catch(()=>({})); throw new Error(err.error || 'Error de conexión con el servidor'); }
+  return res.json();
+}
+
+/* ---------- Estado ---------- */
+let ESTILISTAS = [];               // se carga desde la API al iniciar
+let flow = {tab:'reservar', step:1, stylist:null, service:null, day:null, hour:null, horas:[]};
+let agendaStylist = localStorage.getItem('turnos_agenda_login') || null; // solo el login demo queda local
+
+function money(n){ return '$' + n.toLocaleString('es-CO'); }
+function nextDays(n){
+  const out=[]; const names=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  for(let i=0;i<n;i++){ const d=new Date(); d.setDate(d.getDate()+i);
+    out.push({key:d.toISOString().slice(0,10), label:names[d.getDay()], num:d.getDate()}); }
+  return out;
+}
+
+/* ---------- Router simple ---------- */
+function setTab(t){
+  flow.tab=t;
+  document.getElementById('tabReservar').classList.toggle('active', t==='reservar');
+  document.getElementById('tabAgenda').classList.toggle('active', t==='agenda');
+  document.getElementById('tagline').textContent = t==='reservar'
+    ? 'Reserva tu cita con tu estilista de confianza'
+    : 'Panel de la estilista';
+  if(t==='reservar'){ flow.step=1; flow.stylist=null; flow.service=null; flow.day=null; flow.hour=null; flow.horas=[]; }
+  if(t==='agenda' && agendaStylist && agendaTurnos===null){ cargarAgenda(); return; }
+  render();
+}
+
+function render(){
+  const m = document.getElementById('main');
+  m.innerHTML = flow.tab==='reservar' ? renderReserva() : renderAgenda();
+}
+
+/* ---------- Carga inicial de estilistas ---------- */
+async function cargarEstilistas(){
+  try{ ESTILISTAS = await api('/estilistas'); }
+  catch(e){ ESTILISTAS = null; /* backend no disponible */ }
+  render();
+}
+
+/* ---------- Flujo de reserva ---------- */
+function renderReserva(){
+  if(flow.step===1) return stepStylists();
+  if(flow.step===2) return stepServices();
+  if(flow.step===3) return stepHorario();
+  if(flow.step===4) return stepDatosPago();
+  if(flow.step===5) return stepConfirmacion();
+}
+
+function backBtn(toStep){ return `<button class="back" onclick="flow.step=${toStep};render()">← Atrás</button>`; }
+
+function stepStylists(){
+  if(ESTILISTAS===null) return `<div class="empty">No se pudo conectar con el servidor.<br>Verifica que el backend esté corriendo en ${API_BASE}.<br><button class="btn secondary" onclick="cargarEstilistas()">Reintentar</button></div>`;
+  if(!ESTILISTAS.length) return `<div class="empty">Cargando estilistas…</div>`;
+  return `<h2>Elige tu estilista</h2>` + ESTILISTAS.map(s=>`
+    <div class="card stylist" onclick='pickStylist("${s.id}")'>
+      <div class="avatar">${s.nombre.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
+      <div><h3>${s.nombre}</h3><p>${s.especialidad}</p></div>
+    </div>`).join('');
+}
+function pickStylist(id){ flow.stylist = ESTILISTAS.find(s=>s.id===id); flow.step=2; render(); }
+
+function stepServices(){
+  const s = flow.stylist;
+  return backBtn(1) + `<h2>Servicios de ${s.nombre}</h2><div class="card">` +
+    s.servicios.map((sv,i)=>`
+      <div class="service-row" onclick='pickService(${i})'>
+        <div><b>${sv.nombre}</b><br><span>${sv.duracionMin} min</span></div>
+        <span class="price">${money(sv.precio)}</span>
+      </div>`).join('') + `</div>`;
+}
+function pickService(i){ flow.service = flow.stylist.servicios[i]; flow.step=3; selectDay(nextDays(7)[0].key); }
+
+async function selectDay(key){
+  flow.day = key; flow.hour = null; flow.horas = null; render();
+  try{ const data = await api(`/estilistas/${flow.stylist.id}/disponibilidad?dia=${key}`); flow.horas = data.horas; }
+  catch(e){ flow.horas = []; alert(e.message); }
+  render();
+}
+
+function stepHorario(){
+  const days = nextDays(7);
+  return backBtn(2) + `<h2>Elige fecha y hora</h2>
+    <div class="days">${days.map(d=>`
+      <div class="day ${d.key===flow.day?'active':''}" onclick="selectDay('${d.key}')">
+        <small>${d.label}</small>${d.num}
+      </div>`).join('')}</div>
+    <div class="card"><div class="slots">
+      ${flow.horas===null ? `<span style="grid-column:1/-1;color:var(--muted);font-size:.85rem;">Consultando disponibilidad…</span>` :
+        flow.horas.map(h=>`<div class="slot ${!h.libre?'taken':''} ${flow.hour===h.hora?'active':''}"
+          onclick="${h.libre?`selectHour('${h.hora}')`:''}">${h.hora}</div>`).join('')}
+    </div></div>
+    <button class="btn" ${flow.hour?'':'disabled'} onclick="flow.step=4;render()">Continuar</button>`;
+}
+function selectHour(h){ flow.hour=h; render(); }
+
+function stepDatosPago(){
+  return backBtn(3) + `<h2>Tus datos y pago</h2>
+    <div class="card">
+      <div class="summary-line"><span>Estilista</span><b>${flow.stylist.nombre}</b></div>
+      <div class="summary-line"><span>Servicio</span><b>${flow.service.nombre}</b></div>
+      <div class="summary-line"><span>Fecha</span><b>${flow.day} · ${flow.hour}</b></div>
+      <div class="summary-line total"><span>Total</span><span>${money(flow.service.precio)}</span></div>
+    </div>
+    <div class="card">
+      <label>Nombre completo</label><input id="cName" placeholder="Ej. Laura Gómez">
+      <label>Teléfono</label><input id="cPhone" placeholder="300 000 0000">
+      <label>Número de tarjeta</label><input id="cCard" placeholder="4242 4242 4242 4242" maxlength="19">
+      <div class="row2">
+        <div><label>Vencimiento</label><input id="cExp" placeholder="MM/AA" maxlength="5"></div>
+        <div><label>CVC</label><input id="cCvc" placeholder="123" maxlength="3"></div>
+      </div>
+      <p style="font-size:.75rem;color:var(--muted);margin-top:10px;">El turno se crea en tu backend y el cobro pasa por Stripe (modo test). Sustituye el paso de tarjeta por Stripe Elements para producción.</p>
+      <button class="btn" id="btnPagar" onclick="pagarYConfirmar()">Pagar ${money(flow.service.precio)} y reservar</button>
+    </div>`;
+}
+
+async function pagarYConfirmar(){
+  const clienteNombre=document.getElementById('cName').value.trim();
+  const clienteTelefono=document.getElementById('cPhone').value.trim();
+  const card=document.getElementById('cCard').value.trim();
+  if(!clienteNombre||!clienteTelefono||!card){ alert('Completa tus datos y la tarjeta para continuar.'); return; }
+
+  const btn = document.getElementById('btnPagar');
+  btn.disabled = true; btn.textContent = 'Procesando…';
+  try{
+    // 1) crea el turno (queda pendiente_pago y bloquea el horario)
+    const turno = await api('/turnos', { method:'POST', body: JSON.stringify({
+      estilistaId: flow.stylist.id, servicioId: flow.service.id,
+      dia: flow.day, hora: flow.hour, clienteNombre, clienteTelefono
+    })});
+    // 2) crea el intento de cobro en Stripe
+    await api('/pagos/crear-intento', { method:'POST', body: JSON.stringify({ turnoId: turno.id }) });
+    // 3) en producción, aquí Stripe.js cobra la tarjeta y su webhook confirma el turno.
+    //    Para esta demo confirmamos directo una vez "pagado".
+    await api(`/turnos/${turno.id}`, { method:'PATCH', body: JSON.stringify({ estado:'confirmado' }) });
+    flow.step=5; render();
+  }catch(e){
+    alert(e.message);
+    btn.disabled = false; btn.textContent = `Pagar ${money(flow.service.precio)} y reservar`;
+  }
+}
+
+function stepConfirmacion(){
+  return `<div class="confirm">
+    <div class="check">✓</div>
+    <h2>¡Turno confirmado!</h2>
+    <p style="color:var(--muted)">${flow.stylist.nombre} te espera el ${flow.day} a las ${flow.hour} para tu ${flow.service.nombre.toLowerCase()}.</p>
+    <button class="btn" onclick="setTab('reservar')">Reservar otro turno</button>
+  </div>`;
+}
+
+/* ---------- Panel estilista ---------- */
+let agendaTurnos = null;
+
+function renderAgenda(){
+  if(!agendaStylist){
+    if(ESTILISTAS===null) return `<div class="empty">No se pudo conectar con el servidor.<br>Verifica que el backend esté corriendo en ${API_BASE}.</div>`;
+    if(!ESTILISTAS.length) return `<div class="empty">Cargando…</div>`;
+    return `<h2>¿Quién eres?</h2><p style="color:var(--muted);font-size:.85rem;margin-top:-8px;">Selecciona tu perfil para ver tu agenda (demo sin contraseña).</p>` +
+      ESTILISTAS.map(s=>`<div class="login-pick" onclick="loginAs('${s.id}')"><b>${s.nombre}</b></div>`).join('');
+  }
+  const s = ESTILISTAS.find(x=>x.id===agendaStylist);
+  if(agendaTurnos===null) return `<div class="empty">Cargando agenda…</div>`;
+  return `<button class="back" onclick="agendaStylist=null;agendaTurnos=null;localStorage.removeItem('turnos_agenda_login');render()">← Cambiar perfil</button>
+    <h2>Agenda de ${s.nombre}</h2>
+    ${agendaTurnos.length===0 ? `<div class="empty">Aún no tienes turnos reservados.</div>` :
+      agendaTurnos.map(a=>`
+        <div class="appt ${a.estado==='completado'?'done':''} ${a.estado==='cancelado'?'cancelled':''}">
+          <div class="appt-top"><span>${a.dia} · ${a.hora}</span><span>${money(a.precio)}</span></div>
+          <h3>${a.clienteNombre}</h3>
+          <div style="font-size:.85rem;color:var(--muted)">${a.servicioNombre} · ${a.clienteTelefono}</div>
+          ${a.estado==='confirmado' ? `
+            <div class="appt-actions">
+              <button class="done-btn" onclick="updateAppt('${a.id}','completado')">Marcar hecho</button>
+              <button class="cancel-btn" onclick="updateAppt('${a.id}','cancelado')">Cancelar</button>
+            </div>` : `<div style="margin-top:8px;font-size:.8rem;color:var(--muted);text-transform:capitalize;">${a.estado.replace('_',' ')}</div>`}
+        </div>`).join('')}`;
+}
+function loginAs(id){ agendaStylist=id; agendaTurnos=null; localStorage.setItem('turnos_agenda_login', id); cargarAgenda(); }
+async function cargarAgenda(){
+  render();
+  try{ agendaTurnos = await api(`/turnos?estilistaId=${agendaStylist}`); }
+  catch(e){ agendaTurnos = []; alert(e.message); }
+  render();
+}
+async function updateAppt(id, estado){
+  try{ await api(`/turnos/${id}`, { method:'PATCH', body: JSON.stringify({ estado }) }); cargarAgenda(); }
+  catch(e){ alert(e.message); }
+}
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+cargarEstilistas();
+</script>
+</body>
+</html>
