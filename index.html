@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css?v=2">
+<title>BEATIFULL NAILS — Turnos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <img class="logo" src="img/logo.jpg" alt="BEATIFULL NAILS">
+    <div class="eyebrow">Uñas · Salón</div>
+    <h1>Reserva tu turno</h1>
+    <p id="hoursLine">Lun–Sáb 8:00am–5:30pm · Dom 8:00am–2:00pm</p>
+  </div>
+
+  <div class="gallery">
+    <h2>Nuestros trabajos</h2>
+    <div class="sub">Un vistazo a los diseños de Beatifull Nails</div>
+    <div class="gallery-viewport">
+      <div class="gallery-track">
+      <img src="img/trabajo1.jpg" alt="Trabajo de uñas de Beatifull Nails 1" loading="lazy">
+      <img src="img/trabajo2.jpg" alt="Trabajo de uñas de Beatifull Nails 2" loading="lazy">
+      <img src="img/trabajo3.jpg" alt="Trabajo de uñas de Beatifull Nails 3" loading="lazy">
+      <img src="img/trabajo4.jpg" alt="Trabajo de uñas de Beatifull Nails 4" loading="lazy">
+      </div>
+    </div>
+  </div>
+
+  <div class="days" id="dayTabs"></div>
+
+  <div style="display:flex; justify-content:flex-end; margin: -12px 0 20px;">
+    <button class="owner-toggle" id="calendarBtn">📅 Ver calendario completo</button>
+  </div>
+
+  <div id="selectedDateLabel" style="text-align:center; color:var(--off-dim); font-size:12px; font-weight:600; letter-spacing:0.03em; margin-bottom:6px;"></div>
+  <div style="text-align:center; margin-bottom:14px;">
+    <button class="owner-toggle" id="closeDayBtn" style="display:none; padding:5px 9px; font-size:9px;">🚫 Cerrar este día</button>
+  </div>
+
+  <div id="closedMsg" class="full-msg" style="display:none;">Cerrado ese día. Elegí otra fecha.</div>
+
+  <div id="mainContent">
+    <div class="counter-card">
+      <div class="num" id="queueCount">0<span>/18</span></div>
+      <div class="label">
+        En espera hoy<strong id="nextNum">Turno #1 libre</strong>
+        <button class="owner-toggle" id="editCapacityBtn" style="display:none; margin-top:8px; padding:5px 9px; font-size:9px;">⚙ Horarios del día</button>
+      </div>
+    </div>
+
+    <div class="my-turn-card" id="myTurnCard" style="display:none;">
+      <div class="my-turn-label">Tu turno</div>
+      <div class="my-turn-num" id="myTurnNum">#—</div>
+      <div class="my-turn-status" id="myTurnStatus"></div>
+      <button class="owner-toggle" id="notifyMeBtn" style="display:none; margin-top:10px;">🔔 Avisarme cuando se acerque</button>
+    </div>
+
+    <div id="fullMsg" class="full-msg" style="display:none;">
+      Ya se completaron los 18 turnos de este día. Probá con otra fecha.
+    </div>
+
+    <div class="queue-list">
+      <div class="queue-header">
+        <h2>Fila de hoy</h2>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="owner-toggle" id="historyBtn" style="display:none;">🕘 Historial</button>
+          <button class="owner-toggle" id="scheduleBtn" style="display:none;">🗓 Horario</button>
+          <button class="owner-toggle" id="ownerToggle">🔒 Acceso dueño</button>
+        </div>
+      </div>
+      <div id="queueItems"></div>
+    </div>
+
+    <div class="form-card" id="formCard">
+      <h2>Reservar mi puesto</h2>
+      <div id="hourPickerSection" style="display:none; margin-bottom:14px;">
+        <div style="font-size:13px; font-weight:800; color:var(--off); margin-bottom:6px;">Selecciona tu hora</div>
+        <div id="hourPickerChips" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+      <input type="text" id="nameInput" placeholder="Tu nombre" maxlength="40">
+      <input type="tel" id="phoneInput" placeholder="Tu WhatsApp / celular" maxlength="20">
+
+      <div style="font-size:13px; font-weight:800; color:var(--off); margin-bottom:6px;">Servicios</div>
+      <div id="servicesPickWrap">
+        <button type="button" class="owner-toggle" id="chooseServicesBtn" style="width:100%; justify-content:center;">+ Elegir servicios</button>
+        <div id="servicesSummary" style="display:none;">
+          <div id="servicesSummaryText"></div>
+          <button type="button" class="desc-toggle" id="changeServicesBtn">Cambiar selección</button>
+        </div>
+      </div>
+
+      <div style="font-size:13px; font-weight:800; color:var(--off); margin:14px 0 6px;">¿Algo más que quieras contarnos? <span style="font-weight:500; color:var(--off-dim); text-transform:none; letter-spacing:normal;">(opcional)</span></div>
+      <div style="font-size:13px; font-weight:800; color:var(--off); margin:14px 0 6px;">¿Cómo vas a pagar?</div>
+      <div id="paymentMethodChips" style="display:flex; gap:8px; margin-bottom:6px;">
+        <button type="button" class="payment-chip" data-metodo="linea">💳 En línea</button>
+        <button type="button" class="payment-chip" data-metodo="efectivo">💵 Efectivo</button>
+      </div>
+      <p id="paymentMethodHint" style="font-size:11px; color:var(--off-dim); margin:0 0 10px; line-height:1.5; display:none;"></p>
+
+      <textarea id="descInput" placeholder="Describe brevemente lo que deseas realizar..." maxlength="500" rows="2"></textarea>
+      <button class="cta" id="joinBtn" disabled>Tomar turno</button>
+    </div>
+
+    <div class="pay-card">
+      <h2>Pago por transferencia (efectivo)</h2>
+      <p style="font-size:11px; color:var(--off-dim); margin:-4px 0 12px; line-height:1.5;">Si elegiste "Efectivo" arriba, podés adelantar la transferencia acá. La dueña revisa y confirma tu turno.</p>
+      <div class="pay-row"><span class="k">Banco</span><span class="v">Nequi</span></div>
+      <div class="pay-row"><span class="k">Número</span><span class="v">312 276 3390</span></div>
+      <div class="pay-row"><span class="k">A nombre de</span><span class="v">BEATIFULL NAILS</span></div>
+      <button class="copy-btn" id="copyBtn">Copiar número Nequi</button>
+    </div>
+  </div>
+
+  <p class="hint">Los turnos son por orden de llegada, sin hora fija. Beatifull Nails te llama cuando se acerca tu turno.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="pinModal">
+  <div class="modal-box">
+    <h3>Acceso dueño</h3>
+    <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" maxlength="6">
+    <div class="modal-actions">
+      <button class="cancel" id="pinCancel">Cancelar</button>
+      <button class="confirm" id="pinConfirm">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="historyModal">
+  <div class="modal-box" style="max-width: 360px;">
+    <h3>Historial de días</h3>
+    <p style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;">Los días de más de una semana se borran solos. Podés borrar uno puntual o forzar la limpieza ahora.</p>
+    <div id="historyList" style="max-height: 320px; overflow-y: auto; margin-bottom: 14px;"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="historyClose">Cerrar</button>
+      <button class="confirm" id="historyClearOld" style="background:rgba(196,69,58,0.15); color:var(--red); border:1px solid rgba(196,69,58,0.35);">Limpiar ahora</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="calendarModal">
+  <div class="modal-box" style="max-width: 340px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <button class="owner-toggle" id="calPrevMonth" style="padding:6px 12px;">‹</button>
+      <h3 id="calMonthLabel" style="margin:0;">Mes</h3>
+      <button class="owner-toggle" id="calNextMonth" style="padding:6px 12px;">›</button>
+    </div>
+    <div id="calWeekdays" style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:6px; font-size:10px; color:var(--off-dim); text-align:center; letter-spacing:0.05em;"></div>
+    <div id="calGrid" style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px;"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="calClose">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="capacityModal">
+  <div class="modal-box" style="max-width: 380px;">
+    <h3>Horarios de <span id="capacityDateLabel">este día</span></h3>
+    <div class="override-banner" id="overrideBanner" style="display:none;">
+      <span>📌 Este día tiene un horario especial, distinto al general.</span>
+      <button type="button" id="removeOverrideBtn">Quitar</button>
+    </div>
+    <div class="slots-toggle-row">
+      <div>
+        <div style="font-size:13px; font-weight:800; color:var(--off);">Horarios exactos</div>
+        <div style="font-size:10px; color:var(--off-dim); margin-top:1px;">Activalo o desactivalo cuando quieras</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="slotsEnabledToggle">
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+    <div id="slotsSection">
+      <p style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;">Cargá las horas exactas en las que vas a atender ese día (pueden ser distintas cada día, y tantas como clientes vayas a recibir). El que reserve primero, le toca la primera hora que pusiste; el segundo, la segunda; y así.</p>
+      <div id="slotsChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+      <div class="slot-add-row">
+        <input type="time" id="slotTimeInput" class="slot-time-input">
+        <button class="slot-add-btn" id="addSlotBtn" type="button">Agregar</button>
+      </div>
+      <label class="slot-override-row">
+        <input type="checkbox" id="slotsOverrideDayToggle" class="check-pill">
+        <span>
+          Solo para <b id="slotsOverrideDayLabel">este día</b> (si no marcás esto, este horario
+          queda guardado para <b>todos los días</b> de aquí en adelante, sin importar cuál sea).
+        </span>
+      </label>
+    </div>
+    <p style="font-size:11px; color:var(--off-dim); margin:16px 0 8px; line-height:1.5;">Mientras los horarios exactos estén desactivados, se usa esto en su lugar: cantidad de turnos y un tiempo aproximado por cliente.</p>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+      <input type="number" id="capacityInput" min="1" max="200" inputmode="numeric" placeholder="Ej: 18" style="flex:1;">
+      <span style="font-size:11px; color:var(--off-dim); white-space:nowrap;">turnos</span>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input type="number" id="minutesPerClientInput" min="1" max="480" inputmode="numeric" placeholder="Ej: 30" style="flex:1;">
+      <span style="font-size:11px; color:var(--off-dim); white-space:nowrap;">min/cliente</span>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" id="capacityCancel">Cancelar</button>
+      <button class="confirm" id="capacitySave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="scheduleModal">
+  <div class="modal-box schedule-modal-box">
+    <h3>Horario semanal</h3>
+    <p style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;">Elegí qué días trabajás y en qué horario. Esto se repite todas las semanas. Para cerrar un día puntual sin cambiar el resto (por ejemplo, un feriado o una salida), usá "Cerrar este día" en la pantalla principal.</p>
+    <div id="scheduleRows" style="display:flex; flex-direction:column; gap:10px; max-height:360px; overflow-y:auto; margin-bottom:14px;"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="scheduleCancel">Cancelar</button>
+      <button class="confirm" id="scheduleSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-backdrop" id="servicesModal">
+  <div class="modal-box" style="max-width: 400px;">
+    <h3>Elegí tus servicios</h3>
+    <p style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;">Podés elegir uno o varios. Se guardan todos en la misma reserva.</p>
+    <div id="servicesList" style="display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; margin-bottom:14px;"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:13px; font-weight:800; color:var(--off);">
+      <span>Total</span>
+      <span id="servicesModalTotal">$0</span>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" id="servicesModalCancel">Cancelar</button>
+      <button class="confirm" id="servicesModalConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="changeHourModal">
+  <div class="modal-box" style="max-width: 340px;">
+    <h3>Cambiar hora</h3>
+    <p id="changeHourClientLabel" style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;"></p>
+    <div id="changeHourChips" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="changeHourCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="pagoLineaModal">
+  <div class="modal-box" style="max-width: 360px;">
+    <h3>Pagar en línea</h3>
+    <p style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;">Tu horario ya quedó reservado mientras completas el pago.</p>
+    <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:var(--off); margin-bottom:14px;">
+      <span>Total a pagar</span><span id="pagoLineaTotal">$0</span>
+    </div>
+    <div id="stripeCardElement"></div>
+    <div id="stripeCardErrors" style="color:var(--red); font-size:11px; margin-top:8px; display:none;"></div>
+    <p style="font-size:10px; color:var(--off-dim); margin:10px 0 0; line-height:1.5;">Pago seguro procesado por Stripe. Beatifull Nails nunca ve ni guarda el número de tu tarjeta.</p>
+    <div class="modal-actions">
+      <button class="cancel" id="pagoLineaCancel">Cancelar</button>
+      <button class="confirm" id="pagoLineaConfirm">Pagar y confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script src="js/config.js?v=1"></script>
+<script src="js/api.js?v=1"></script>
+<script src="js/app.js?v=7"></script>
+</body>
+</html>
