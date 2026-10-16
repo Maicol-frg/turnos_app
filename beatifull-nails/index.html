@@ -99,25 +99,19 @@
       </div>
 
       <div style="font-size:13px; font-weight:800; color:var(--off); margin:14px 0 6px;">¿Algo más que quieras contarnos? <span style="font-weight:500; color:var(--off-dim); text-transform:none; letter-spacing:normal;">(opcional)</span></div>
-      <div style="font-size:13px; font-weight:800; color:var(--off); margin:14px 0 6px;">¿Cómo vas a pagar?</div>
-      <div id="paymentMethodChips" style="display:flex; gap:8px; margin-bottom:6px;">
-        <button type="button" class="payment-chip" data-metodo="linea">💳 En línea</button>
-        <button type="button" class="payment-chip" data-metodo="efectivo">💵 Efectivo</button>
-      </div>
-      <p id="paymentMethodHint" style="font-size:11px; color:var(--off-dim); margin:0 0 10px; line-height:1.5; display:none;"></p>
-
+      <p style="font-size:11px; color:var(--off-dim); margin:10px 0;">Pago en efectivo en el salón.</p>
       <textarea id="descInput" placeholder="Describe brevemente lo que deseas realizar..." maxlength="500" rows="2"></textarea>
       <button class="cta" id="joinBtn" disabled>Tomar turno</button>
     </div>
 
-    <div class="pay-card">
-      <h2>Pago por transferencia (efectivo)</h2>
-      <p style="font-size:11px; color:var(--off-dim); margin:-4px 0 12px; line-height:1.5;">Si elegiste "Efectivo" arriba, podés adelantar la transferencia acá. La dueña revisa y confirma tu turno.</p>
-      <div class="pay-row"><span class="k">Banco</span><span class="v">Nequi</span></div>
-      <div class="pay-row"><span class="k">Número</span><span class="v">312 276 3390</span></div>
-      <div class="pay-row"><span class="k">A nombre de</span><span class="v">BEATIFULL NAILS</span></div>
-      <button class="copy-btn" id="copyBtn">Copiar número Nequi</button>
-    </div>
+
+  <div class="pay-card">
+    <h2>Pago por transferencia</h2>
+    <div class="pay-row"><span class="k">Banco</span><span class="v">Nequi</span></div>
+    <div class="pay-row"><span class="k">Número</span><span class="v">312 276 3390</span></div>
+    <div class="pay-row"><span class="k">A nombre de</span><span class="v">BEATIFULL NAILS</span></div>
+    <button class="copy-btn" id="copyBtn">Copiar número Nequi</button>
+  </div>
   </div>
 
   <p class="hint">Los turnos son por orden de llegada, sin hora fija. Beatifull Nails te llama cuando se acerca tu turno.</p>
@@ -190,8 +184,8 @@
       <label class="slot-override-row">
         <input type="checkbox" id="slotsOverrideDayToggle" class="check-pill">
         <span>
-          Solo para <b id="slotsOverrideDayLabel">este día</b> (si no marcás esto, este horario
-          queda guardado para <b>todos los días</b> de aquí en adelante, sin importar cuál sea).
+          Solo para <b id="slotsOverrideDayLabel">esta fecha</b>. Si no marcás esto, este horario
+          se aplicará a todos los días de la semana.
         </span>
       </label>
     </div>
@@ -251,26 +245,20 @@
   </div>
 </div>
 
-<div class="modal-backdrop" id="pagoLineaModal">
-  <div class="modal-box" style="max-width: 360px;">
-    <h3>Pagar en línea</h3>
-    <p style="font-size:11px; color:var(--off-dim); margin-bottom:12px; line-height:1.5;">Tu horario ya quedó reservado mientras completas el pago.</p>
-    <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:var(--off); margin-bottom:14px;">
-      <span>Total a pagar</span><span id="pagoLineaTotal">$0</span>
-    </div>
-    <div id="stripeCardElement"></div>
-    <div id="stripeCardErrors" style="color:var(--red); font-size:11px; margin-top:8px; display:none;"></div>
-    <p style="font-size:10px; color:var(--off-dim); margin:10px 0 0; line-height:1.5;">Pago seguro procesado por Stripe. Beatifull Nails nunca ve ni guarda el número de tu tarjeta.</p>
-    <div class="modal-actions">
-      <button class="cancel" id="pagoLineaCancel">Cancelar</button>
-      <button class="confirm" id="pagoLineaConfirm">Pagar y confirmar</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://js.stripe.com/v3/"></script>
 <script src="js/config.js?v=1"></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.oneSignalReady = false;
+  OneSignalDeferred.push(async function (OneSignal) {
+    try {
+      await OneSignal.init({ appId: ONESIGNAL_APP_ID });
+      window.oneSignalReady = true;
+    } catch (error) {
+      console.error("No se pudo inicializar OneSignal.", error);
+    }
+  });
+</script>
 <script src="js/api.js?v=1"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>
