@@ -12,8 +12,8 @@
  */
 
 const SERVICIOS = [
-  { id: 'semimanos', nombre: 'Semipermanente manos+uñas (mujer)', precio: 55000 },
-  { id: 'semipies', nombre: 'Semipermanente pies (mujer)', precio: 40000 },
+  { id: 'semimanos', nombre: 'Semipermanente manos+uñas (mujer)', precio: 65000 },
+  { id: 'semipies', nombre: 'Semipermanente pies (mujer)', precio: 55000 },
   { id: 'semihombre', nombre: 'Semipermanente mano (hombre)', precio: 35000 },
   { id: 'semipies2', nombre: 'Semipermanente pies (hombre)', precio: 25000 },
   { id: 'dipping', nombre: 'Dipping', precio: 70000 },
