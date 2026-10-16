@@ -10,11 +10,11 @@
 
 const ONESIGNAL_APP_ID = 'c6d1e2f6-d349-4628-ab8d-1b73922668f2';
 
-// Localmente la API sigue en Express; en Cloudflare la misma URL del sitio
-// atiende también /api, evitando configurar dominios separados.
+// URL del backend. Si abres la página desde tu computador usa el servidor
+// local; si está publicada en internet usa el servidor de Railway.
 const API_BASE = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'
   ? 'http://localhost:4000/api'
-  : `${location.origin}/api`;
+  : 'https://turnosapp-production-10c4.up.railway.app/api';
 
 // Lo único que sigue siendo "de este navegador, sin login": qué turno tomó
 // esta persona en cada fecha, para poder mostrarle su propia tarjeta de
