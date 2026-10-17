@@ -1,17 +1,13 @@
 /*
  * BEATIFULL NAILS — Configuración del frontend
  *
- * Antes este archivo también tenía la capacidad por defecto, el horario
- * semanal y el catálogo de servicios. Todo eso ahora vive en el backend
- * (es la fuente de verdad real, compartida entre todos los dispositivos),
- * así que acá solo queda lo que de verdad es propio de este navegador o
- * puramente decorativo/de formato.
+ * El catálogo, los horarios y las reservas se consultan al backend.
+ * En producción, el backend está publicado en Railway.
  */
 
 const ONESIGNAL_APP_ID = 'c6d1e2f6-d349-4628-ab8d-1b73922668f2';
 
-// URL del backend. Si abres la página desde tu computador usa el servidor
-// local; si está publicada en internet usa el servidor de Railway.
+// En local se usa el backend de desarrollo. En producción, la API de Railway.
 const API_BASE = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'
   ? 'http://localhost:4000/api'
   : 'https://turnosapp-production-10c4.up.railway.app/api';
