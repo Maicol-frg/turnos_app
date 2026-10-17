@@ -38,16 +38,21 @@
   let modalSelectionIds = new Set();
 
   let horarioSemanalCache = null; // [{diaSemana, abierto, horaInicio, horaFin}, ...]
-  let metodoPagoSeleccionado = null; // 'linea' | 'efectivo'
-  let turnoPendienteDePago = null; // el turno recién creado, mientras se paga en línea
 
-  let stripeInstance = null;
-  let stripeElements = null;
-  let stripeCardElement = null;
-  let stripeListo = false;
-  let stripePreparacion = null;
 
   const togglesInFlight = new Set(); // ids de turnos con una acción en curso (evita doble click)
+  // El acceso se escucha desde el documento en fase de captura para que el
+  // PIN abra aunque otro manejador detenga la propagación del clic.
+  const pinModal = document.getElementById('pinModal');
+  const pinInput = document.getElementById('pinInput');
+  document.addEventListener('click', (event) => {
+    const button = event.target instanceof Element ? event.target.closest('#ownerToggle') : null;
+    if (!button) return;
+    if (ownerMode) { exitOwnerMode('Volviste a la vista de cliente.'); return; }
+    pinInput.value = '';
+    pinModal.classList.add('show');
+    pinInput.focus();
+  }, true);
 
   // ---------- Utilidades de fecha y formato ----------
   function fmtDateKey(d) {
@@ -171,21 +176,6 @@
 
     const ticket = currentQueue[idx];
     const assignedSlot = getEffectiveHora(ticket);
-
-    if (ticket.estado === 'pendiente_aprobacion') {
-      numEl.textContent = '⏳';
-      statusEl.textContent = 'Esperando que la dueña confirme tu pago en efectivo.';
-      card.style.display = 'block';
-      notifyBtn.style.display = 'none';
-      return;
-    }
-    if (ticket.estado === 'pendiente_pago') {
-      numEl.textContent = '⏳';
-      statusEl.textContent = 'Completa el pago para confirmar tu turno.';
-      card.style.display = 'block';
-      notifyBtn.style.display = 'none';
-      return;
-    }
 
     numEl.textContent = assignedSlot ? fmt12h(assignedSlot) : '#' + (idx + 1);
     if (ticket.estado === 'completado') {
@@ -448,15 +438,23 @@
     document.getElementById('queueItems').innerHTML = rows;
   }
 
+  // Recuerda para qué fecha ya se pintó la fila con datos reales. Así el
+  // esqueleto de carga solo aparece la primera vez que se abre un día
+  // (o al cambiar de fecha), y no en cada refresco automático de 15s ni
+  // después de una acción de la dueña (aprobar, marcar listo, etc.) — eso
+  // era lo que causaba el parpadeo constante de la fila.
+  let fechaConDatosPintados = null;
+
   async function loadQueue() {
     if (!selectedDate) return;
     const fecha = dateKey(selectedDate);
-    showQueueSkeleton();
+    if (fechaConDatosPintados !== fecha) showQueueSkeleton();
     try {
       const [disponibilidad, turnos] = await Promise.all([api.disponibilidadDia(fecha), api.turnosDelDia(fecha)]);
       if (dateKey(selectedDate) !== fecha) return; // el usuario ya cambió de fecha mientras esperábamos
       diaActual = disponibilidad;
       currentQueue = turnos.filter(t => ESTADOS_VISIBLES.includes(t.estado));
+      fechaConDatosPintados = fecha;
       renderQueue();
     } catch (e) {
       if (e.noAutorizado) { exitOwnerMode(e.message); return; }
@@ -523,21 +521,9 @@
         }
       }
 
-      let badgeHtml;
-      if (q.estado === 'pendiente_aprobacion') {
-        badgeHtml = `<div class="badge pendiente-aprobacion">Efectivo: por aprobar</div>`;
-      } else if (q.estado === 'pendiente_pago') {
-        badgeHtml = `<div class="badge pendiente-aprobacion">Esperando pago</div>`;
-      } else if (ownerMode) {
-        badgeHtml = `<div class="badge ${q.estado === 'completado' ? '' : 'pending'}" data-idx="${idx}">${q.estado === 'completado' ? 'Atendido' : 'Marcar listo'}</div>`;
-      } else {
-        badgeHtml = `<div class="badge ${q.estado === 'completado' ? '' : 'pending'}" style="cursor:default;">${q.estado === 'completado' ? '✓ Atendido' : '⏳ Esperando'}</div>`;
-      }
-
-      const aprobacionHtml = (ownerMode && q.estado === 'pendiente_aprobacion')
-        ? `<div class="approval-actions"><button type="button" class="aprobar-btn" data-idx="${idx}">✅ Aprobar</button><button type="button" class="rechazar-btn" data-idx="${idx}">❌ Rechazar</button></div>`
-        : '';
-
+      const badgeHtml = ownerMode
+        ? '<div class="badge ' + (q.estado === 'completado' ? '' : 'pending') + '" data-idx="' + idx + '">' + (q.estado === 'completado' ? 'Atendido' : 'Marcar listo') + '</div>'
+        : '<div class="badge ' + (q.estado === 'completado' ? '' : 'pending') + '" style="cursor:default;">' + (q.estado === 'completado' ? '✓ Atendido' : '⏳ Esperando') + '</div>';
       const callBtn = (ownerMode && phoneStr) ? `<a class="call-btn" href="tel:${escapeHtml(phoneStr.replace(/[^0-9+]/g, ''))}" title="Llamar a ${escapeHtml(nameStr)}">📞</a>` : '';
       let waBtn = '';
       if (ownerMode && phoneStr) {
@@ -575,7 +561,7 @@
             ${descHtml}
           </div>
         </div>
-        <div class="tbadge">${badgeHtml}${aprobacionHtml}</div>`;
+        <div class="tbadge">${badgeHtml}</div>`;
       listEl.appendChild(t);
     });
   }
@@ -591,25 +577,6 @@
       if (box) box.classList.toggle('open');
       descToggleEl.classList.toggle('is-open');
       descToggleEl.querySelector('.desc-toggle-label').textContent = descToggleEl.classList.contains('is-open') ? 'Ocultar' : 'Ver más';
-      return;
-    }
-
-    const aprobarBtn = e.target.closest('.aprobar-btn');
-    const rechazarBtn = e.target.closest('.rechazar-btn');
-    if ((aprobarBtn || rechazarBtn) && ownerMode) {
-      const idx = parseInt((aprobarBtn || rechazarBtn).dataset.idx, 10);
-      const item = currentQueue[idx];
-      if (!item || togglesInFlight.has(item.id)) return;
-      togglesInFlight.add(item.id);
-      try {
-        if (aprobarBtn) { await api.aprobarTurno(item.id); showToast('✓ Turno aprobado.'); }
-        else { await api.rechazarTurno(item.id); showToast('Turno rechazado, el horario quedó libre.'); }
-        await loadQueue();
-      } catch (err) {
-        if (err.noAutorizado) exitOwnerMode(err.message);
-        else showToast(err.message);
-      }
-      togglesInFlight.delete(item.id);
       return;
     }
 
@@ -733,8 +700,8 @@
     renderSlotChips();
     slotsEnabledToggle.checked = diaActual.modo === 'horarios_exactos';
     applySlotsToggleVisual();
-    slotsOverrideDayToggle.checked = false;
-    document.getElementById('slotsOverrideDayLabel').textContent = DIAS_SEMANA[selectedDate.getDay()].toLowerCase() + 's';
+    slotsOverrideDayToggle.checked = diaActual.modo === 'horarios_exactos' && diaActual.horariosPropios;
+    document.getElementById('slotsOverrideDayLabel').textContent = `${selectedDate.getDate()} de ${MESES[selectedDate.getMonth()].toLowerCase()}`;
     overrideBanner.style.display = (diaActual.modo === 'horarios_exactos' && diaActual.horariosPropios) ? 'flex' : 'none';
     capacityModal.classList.add('show');
   });
@@ -814,22 +781,8 @@
     navigator.clipboard.writeText('3122763390').then(() => showToast('Número Nequi copiado.')).catch(() => showToast('312 276 3390'));
   });
 
-  // ---------- Método de pago ----------
-  document.getElementById('paymentMethodChips').addEventListener('click', (e) => {
-    const btn = e.target.closest('.payment-chip');
-    if (!btn) return;
-    metodoPagoSeleccionado = btn.dataset.metodo;
-    document.querySelectorAll('.payment-chip').forEach(b => b.classList.toggle('selected', b === btn));
-    const hint = document.getElementById('paymentMethodHint');
-    hint.style.display = 'block';
-    hint.textContent = metodoPagoSeleccionado === 'linea'
-      ? 'Vas a pagar con tarjeta ahora mismo; tu turno queda confirmado al instante.'
-      : 'La dueña revisa tu comprobante y confirma tu turno. Mientras tanto, tu horario ya queda reservado.';
-    actualizarEstadoBotonReservar();
-  });
-
   function actualizarEstadoBotonReservar() {
-    document.getElementById('joinBtn').disabled = selectedServices.length === 0 || !metodoPagoSeleccionado;
+    document.getElementById('joinBtn').disabled = selectedServices.length === 0;
   }
 
   // ---------- Tomar turno ----------
@@ -842,7 +795,6 @@
     if (!name) { showToast('Escribí tu nombre para tomar el turno.'); return; }
     if (!phone) { showToast('Escribí tu WhatsApp o celular.'); return; }
     if (selectedServices.length === 0) { showToast('Elegí al menos un servicio para tomar el turno.'); return; }
-    if (!metodoPagoSeleccionado) { showToast('Elegí cómo vas a pagar.'); return; }
     if (diaActual.modo === 'horarios_exactos' && !selectedHour) { showToast('Selecciona una hora para tomar tu turno.'); return; }
 
     const joinBtn = document.getElementById('joinBtn');
@@ -855,30 +807,17 @@
         clienteNombre: name,
         clienteTelefono: phone,
         servicios: selectedServices.map(s => s.id),
-        metodoPago: metodoPagoSeleccionado
+        metodoPago: 'efectivo'
       });
 
-      if (metodoPagoSeleccionado === 'efectivo') {
-        finalizarReserva(turno, name, phone);
-        showToast('✓ Reserva enviada. La dueña va a confirmar tu turno.');
-      } else {
-        turnoPendienteDePago = turno;
-        document.getElementById('pagoLineaTotal').textContent = formatCOP(turno.total);
-        document.getElementById('pagoLineaModal').classList.add('show');
-        const payBtn = document.getElementById('pagoLineaConfirm');
-        payBtn.disabled = true;
-        payBtn.textContent = 'Cargando tarjeta...';
-        const errBox = document.getElementById('stripeCardErrors');
-        errBox.style.display = 'none';
-        errBox.textContent = '';
-        prepararStripe().catch(() => {}); // El error se muestra dentro del modal.
-      }
+      finalizarReserva(turno, name, phone);
+      showToast('✓ Turno confirmado. Pago en efectivo en el salón.');
     } catch (e) {
       showToast(e.message || 'Esa hora ya no está disponible. Elegí otra.');
       selectedHour = null;
       await loadQueue();
     }
-    joinBtn.disabled = selectedServices.length === 0 || !metodoPagoSeleccionado;
+    joinBtn.disabled = selectedServices.length === 0;
     joinBtn.textContent = 'Tomar turno';
   });
 
@@ -888,120 +827,12 @@
     document.getElementById('descInput').value = '';
     selectedHour = null;
     selectedServices = [];
-    metodoPagoSeleccionado = null;
-    document.querySelectorAll('.payment-chip').forEach(b => b.classList.remove('selected'));
-    document.getElementById('paymentMethodHint').style.display = 'none';
     renderServicesSummary();
     saveMyTurn(dateKey(selectedDate), turno.id, name, phone);
     loadQueue();
   }
 
-  // ---------- Pago en línea con Stripe Elements ----------
-  async function prepararStripe() {
-    if (stripeListo) {
-      const btn = document.getElementById('pagoLineaConfirm');
-      btn.disabled = false;
-      btn.textContent = 'Pagar y confirmar';
-      return stripeCardElement;
-    }
-    if (stripePreparacion) return stripePreparacion;
-
-    stripePreparacion = (async () => {
-      const errBox = document.getElementById('stripeCardErrors');
-      const btn = document.getElementById('pagoLineaConfirm');
-      try {
-        if (typeof Stripe === 'undefined') {
-          throw new Error('No se pudo cargar Stripe. Revisa tu conexión y vuelve a abrir la página.');
-        }
-        const { publishableKey } = await api.configPagos();
-        if (!publishableKey || !publishableKey.startsWith('pk_')) {
-          throw new Error('Falta configurar STRIPE_PUBLISHABLE_KEY en backend/.env.');
-        }
-        stripeInstance = Stripe(publishableKey);
-        stripeElements = stripeInstance.elements();
-        stripeCardElement = stripeElements.create('card', { style: { base: { fontSize: '15px' } } });
-        stripeCardElement.on('change', (event) => {
-          errBox.style.display = event.error ? 'block' : 'none';
-          errBox.textContent = event.error ? event.error.message : '';
-        });
-        // Montar después de mostrar el modal evita inicializar el iframe de
-        // Stripe dentro de un contenedor oculto.
-        stripeCardElement.mount('#stripeCardElement');
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Stripe tardó demasiado en cargar el campo de tarjeta. Prueba de nuevo o abre el sitio en Chrome.')), 15000);
-          stripeCardElement.on('ready', () => { clearTimeout(timeout); resolve(); });
-        });
-        stripeListo = true;
-        btn.disabled = false;
-        btn.textContent = 'Pagar y confirmar';
-        return stripeCardElement;
-      } catch (e) {
-        if (stripeCardElement) stripeCardElement.unmount();
-        stripeInstance = null;
-        stripeElements = null;
-        stripeCardElement = null;
-        stripeListo = false;
-        errBox.textContent = e.message || 'No se pudo cargar el campo de tarjeta.';
-        errBox.style.display = 'block';
-        btn.disabled = true;
-        btn.textContent = 'Tarjeta no disponible';
-        throw e;
-      }
-    })().finally(() => { stripePreparacion = null; });
-    return stripePreparacion;
-  }
-
-  document.getElementById('pagoLineaCancel').addEventListener('click', () => {
-    document.getElementById('pagoLineaModal').classList.remove('show');
-    showToast('Tu horario queda reservado por un momento; completa el pago para confirmarlo.');
-  });
-
-  document.getElementById('pagoLineaConfirm').addEventListener('click', async () => {
-    if (!stripeInstance || !stripeCardElement) {
-      showToast('El campo de tarjeta todavía no está listo. Revisa el mensaje del formulario.');
-      return;
-    }
-    const btn = document.getElementById('pagoLineaConfirm');
-    btn.disabled = true;
-    btn.textContent = 'Procesando...';
-    try {
-      const { clientSecret } = await api.crearIntentoPago(turnoPendienteDePago.id);
-      btn.textContent = 'Verificando tarjeta...';
-      const resultado = await stripeInstance.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: stripeCardElement,
-          billing_details: { name: turnoPendienteDePago.clienteNombre }
-        }
-      });
-
-      if (resultado.error) {
-        const errBox = document.getElementById('stripeCardErrors');
-        errBox.style.display = 'block';
-        errBox.textContent = resultado.error.message;
-      } else if (resultado.paymentIntent && resultado.paymentIntent.status === 'succeeded') {
-        // El estado real del turno ("confirmado") lo pone el webhook cuando
-        // Stripe le avisa al backend; acá solo cerramos la pantalla del cliente.
-        document.getElementById('pagoLineaModal').classList.remove('show');
-        finalizarReserva(turnoPendienteDePago, turnoPendienteDePago.clienteNombre, turnoPendienteDePago.clienteTelefono);
-        showToast('✓ Pago realizado. Confirmando tu turno...');
-      }
-    } catch (e) {
-      showToast(e.message || 'No se pudo procesar el pago.');
-    }
-    btn.disabled = false;
-    btn.textContent = 'Pagar y confirmar';
-  });
-
   // ---------- Modo dueño: login ----------
-  const pinModal = document.getElementById('pinModal');
-  const pinInput = document.getElementById('pinInput');
-
-  document.getElementById('ownerToggle').addEventListener('click', () => {
-    if (ownerMode) { exitOwnerMode('Volviste a la vista de cliente.'); return; }
-    pinInput.value = '';
-    pinModal.classList.add('show');
-    pinInput.focus();
-  });
   document.getElementById('pinCancel').addEventListener('click', () => pinModal.classList.remove('show'));
   pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('pinConfirm').click(); });
 
@@ -1079,7 +910,7 @@
   document.getElementById('notifyMeBtn').addEventListener('click', async () => {
     const btn = document.getElementById('notifyMeBtn');
     const saved = getMyTurnForDate(dateKey(selectedDate));
-    if (!saved || typeof OneSignalDeferred === 'undefined') { showToast('Los recordatorios no están disponibles en este momento.'); return; }
+    if (!saved || !window.oneSignalReady || typeof OneSignalDeferred === 'undefined') { showToast('OneSignal todavía no está listo. Recarga la página e inténtalo de nuevo.'); return; }
     btn.disabled = true; btn.textContent = 'Activando...';
     OneSignalDeferred.push(async function (OneSignal) {
       try {
@@ -1123,3 +954,4 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !userInteracting && togglesInFlight.size === 0 && selectedDate) loadQueue(); });
   window.addEventListener('focus', () => { if (!document.hidden && !userInteracting && togglesInFlight.size === 0 && selectedDate) loadQueue(); });
 })();
+
